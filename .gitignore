@@ -4,6 +4,10 @@
 *.so
 *.dylib
 
+# Vagrant
+.vagrant/
+/ksonnet-lib
+
 # Test binary, build with `go test -c`
 *.test
 
@@ -14,10 +18,10 @@
 .glide/
 
 /controller
-/kubeseal
+/kubeseal*
 /controller.image
 /*-static
-/controller.yaml
+/controller*.yaml
 /sealedsecret-crd.yaml
 /docker/controller
 *.iml
