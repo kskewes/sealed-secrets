@@ -30,10 +30,7 @@
 
 function setup_env() {
 
-	echo "
-	###################################################################
-	## Starting Setting Environment Variables...
-	###################################################################"
+	print_header 'Started Setting Environment Variables...'
 
 	if ! grep -q 'Sealed Secrets' /root/.profile; then
 		cat >> /root/.profile <<- EOF
@@ -71,17 +68,11 @@ function setup_env() {
 	source /root/.profile
 	env
 
-	echo "
-	###################################################################
-	## Finished Setting Environment Variables...
-	###################################################################"
+	print_header 'Finished Setting Environment Variables...'
 }
 
 function install_go() {
-	echo "
-	###################################################################
-	## Starting installing GO...
-	###################################################################"
+	print_header 'Started installing GO...'
 
 	echo "Installing Golang $TRAVIS_GO_VERSION..."
 	VERSION="$TRAVIS_GO_VERSION"
@@ -97,18 +88,12 @@ function install_go() {
 	mkdir -p "${GOPATH}/bin"
 	mkdir -p "${HOME}/.go"
 
-	echo "
-	###################################################################
-	## Finished installing GO...
-	###################################################################"
+	print_header 'Finished installing GO...'
 }
 
 
 function install_kubernetes() {
-	echo "
-	###################################################################
-	## Starting installing Kubernetes - minikube and kubectl...
-	###################################################################"
+	print_header 'Started installing Kubernetes - minikube and kubectl...'
 
 	echo "Installing Docker..."
 	apt install -y \
@@ -158,17 +143,11 @@ function install_kubernetes() {
 		--kubernetes-version "$INT_KVERS"
 	fi
 
-	echo "
-	###################################################################
-	## Finished installing Kubernetes - minikube and kubectl...
-	###################################################################"
+	print_header 'Finished installing Kubernetes - minikube and kubectl...'
 }
 
 install_build_tools() {
-	echo "
-	###################################################################
-	## Starting installing build tools...
-	###################################################################"
+	print_header 'Started installing build tools...'
 
 	cd "${GOPATH}/src/github.com/bitnami-labs/sealed-secrets" || exit 2
 
@@ -199,17 +178,11 @@ install_build_tools() {
 	git clone --depth=1 https://github.com/ksonnet/ksonnet-lib.git
 	export KUBECFG_JPATH=$PWD/ksonnet-lib
 
-	echo "
-	###################################################################
-	## Finished installing build tools...
-	###################################################################"
+	print_header 'Finished installing build tools...'
 }
 
 function test_sealed_secrets() {
-	echo "
-	###################################################################
-	## Starting Sealed Secrets Script Jobs...
-	###################################################################"
+	print_header 'Started Sealed Secrets Script Jobs...'
 
 	make
 	make test
@@ -237,23 +210,28 @@ function test_sealed_secrets() {
 	  make integrationtest "CONTROLLER_IMAGE=$CONTROLLER_IMAGE"
 	fi
 
+	print_header 'Finished Sealed Secrets Script Jobs...'
+}
+
+function print_header() {
 	echo "
 	###################################################################
-	## Finished Sealed Secrets Script Jobs...
+	## $1
 	###################################################################"
 }
 
+main() {
 
-apt update
+	apt update
+	setup_env
+	install_go
+	install_kubernetes
+	install_build_tools
+	test_sealed_secrets
 
-setup_env
+	echo "All build and test processes completed successfully."
 
-install_go
+}
 
-install_kubernetes
+main "$@"
 
-install_build_tools
-
-test_sealed_secrets
-
-echo "All build and test processes completed successfully."
