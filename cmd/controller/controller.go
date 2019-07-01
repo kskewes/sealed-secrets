@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -56,7 +56,6 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 		// TODO: requeue?
 		return err
 	}
-
 	log.Printf("Updated %s", objName)
 	return nil
 }
@@ -177,8 +176,10 @@ func (c *Controller) unseal(key string) error {
 		}
 		err = c.sclient.Secrets(ns).Delete(name, &metav1.DeleteOptions{})
 		if err != nil && !errors.IsNotFound(err) {
+			unsealCountTotal.WithLabelValues("delete", "failure").Inc()
 			return err
 		}
+		unsealCountTotal.WithLabelValues("delete", "success").Inc()
 		return nil
 	}
 
@@ -193,19 +194,26 @@ func (c *Controller) unseal(key string) error {
 	_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(secret)
 	if err == nil {
 		// Secret successfully created
+		unsealCountTotal.WithLabelValues("create", "success").Inc()
 		return nil
 	}
 	if !errors.IsAlreadyExists(err) {
 		// Error wasn't already exists so is real error
+		unsealCountTotal.WithLabelValues("create", "failure").Inc()
 		return err
 	}
 
 	// Secret already exists so update it in place with new data/owner reference
 	updatedSecret, err := c.updateSecret(secret)
 	if err != nil {
+		unsealCountTotal.WithLabelValues("update", "failure").Inc()
 		return fmt.Errorf("failed to update existing secret: %s", err)
 	}
 	_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(updatedSecret)
+	// TODO: Confirm this is the correct place to increment metrics counter
+	if err == nil {
+		unsealCountTotal.WithLabelValues("update", "success").Inc()
+	}
 	return err
 }
 
