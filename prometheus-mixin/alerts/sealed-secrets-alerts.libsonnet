@@ -17,7 +17,7 @@
         {
           alert: 'SealedSecretsErrorRateHigh',
           expr: |||
-            sum(rate(sealed_secrets_controller_unseal_count_total{status="failure"}[5m])) > 0
+            sum(rate(sealed_secrets_controller_unseal_attempts_total{status="failure"}[5m])) > 0
           ||| % $._config,
           // 'for': '5m', // Not used, see caveats above.
           labels: {
